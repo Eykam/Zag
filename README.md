@@ -58,14 +58,16 @@ Diagram: Ethernet Frame (IEEE 802.3)
 ```    
 <------------------------------- Ethernet Frame --------------------------------->
     
-    +------------+------------+---------+------+------+---------+----------------+
-    | Preamble   | Start Frame| Dest    | Src  | Type/| Payload | Frame Check    |
-    | (7 bytes)  | Delimiter  | MAC     | MAC  | Len  | (46-1500| Sequence (FCS) |
-    |            | (1 byte)   | (6 bytes)|(6 bytes)|(2 bytes)| bytes)| (4 bytes)       |
-    +------------+------------+---------+------+------+---------+----------------+
++------------+------------+---------+------+------+---------+----------------+
+| Preamble   | Start Frame| Dest    | Src  | Type | Payload | Frame Check    |
+| (7 bytes)  | Delimiter  | MAC     | MAC  |      |         | Sequence (FCS) |
+|            | 1B         | 6B      | 6B   | 2B   | 46-1500B| 4B             |
++------------+------------+---------+------+------+---------+----------------+
     
-    <--------------------- 18 bytes ---------------><- Variable -><---- 4 bytes --->
-    <-------------------------- 64 to 1518 bytes total -------------------------->
+<--------------------- 18 bytes ---------------><- Variable -><---- 4 bytes --->
+<-------------------------- 64 to 1518 bytes total -------------------------->
+
+
 Preamble: 7 octets of alternating 1s and 0s to synchronize the receiver.
 SFD (Start Frame Delimiter): 1 octet signaling the start of the frame.
 Destination Address: 6 octets identifying the frame's intended recipient.
