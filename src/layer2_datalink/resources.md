@@ -8,7 +8,6 @@
 - Struct
 
 <br>
-<br>
 
 ## Receiving
 #### Overview
