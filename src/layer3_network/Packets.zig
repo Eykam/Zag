@@ -18,4 +18,8 @@ const IPV4_Packet = packed struct {
     }
 };
 
+const IPV6_Packet = packed struct {};
+
+const IPV4_Parser = struct {};
+const IPV6_Parser = struct {};
 test "IPV4_test" {}

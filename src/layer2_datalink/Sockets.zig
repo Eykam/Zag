@@ -7,7 +7,7 @@ const Eth_Parser = Packets.Eth_Parser;
 const Eth_Packet = Packets.Eth_Packet;
 
 const PACKET_PROTO: u32 = 0x0003; // cat /etc/protocols => IP protocol
-const AF_PACKET: u32 = @as(u32, std.posix.AF.PACKET); // TODO: maybe consider getting LLC too ??
+const AF_PACKET: u32 = @as(u32, std.posix.AF.PACKET);
 const SOCK_TYPE: u32 = @as(u32, std.posix.SOCK.RAW);
 const IF_INDEX: i32 = 2;
 

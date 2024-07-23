@@ -61,7 +61,7 @@ pub const Eth_Packet = struct {
     }
     pub fn obfuscate() !void {
         // take bytes in and do random bitshift. No other purpose than to
-        // hide my IP / MAC address when posting logged output on twitter.
+        // hide my IP / MAC address when posting snippets on twitter.
     }
 };
 
