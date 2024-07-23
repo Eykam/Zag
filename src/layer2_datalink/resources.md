@@ -4,9 +4,40 @@
 
 
 ## Receiving
-A stream of analog signals, transferred from Layer 1 (Physical), is converted into digital data (stream of binary data) on the Network Interface Controller (NIC). 
+The transition from Layer 1 to Layer 2 in Ethernet involves:
 
-The NIC monitors the stream of digital data, looking for the preamble. Once it detect the preamble and Start frame delimiter (SFD), it begins to read the remaining frame data (Figure 1).
+1. Signal Reception:
+
+   - The Network Interface Controller (NIC) receives analog signals from the physical medium.
+
+
+2. Signal Decoding:
+
+   - The NIC's circuitry converts these analog signals into a digital bitstream.
+
+
+3. Bitstream Monitoring:
+
+   - The NIC continuously scans the digital bitstream for frame starts.
+
+
+4. Frame Start Detection:
+
+   - The NIC identifies the frame start by recognizing the preamble (7 bytes of 10101010) followed by the Start Frame Delimiter (SFD) byte (10101011).
+
+
+5. Frame Data Capture:
+
+   - Upon detecting the SFD, the NIC begins capturing the subsequent bits as the Ethernet frame data.
+
+
+6. Data Buffering:
+
+   - The captured frame data is stored in the NIC's buffer or transferred to system memory via a shared memory buffer / direct memory access (DMA).
+
+<br>
+
+This process occurs rapidly, with the NIC processing millions of bits per second to accurately frame and process Ethernet data.
 
 ```    
 <------------------------------- NIC Ethernet Frame --------------------------------->
@@ -22,7 +53,7 @@ The NIC monitors the stream of digital data, looking for the preamble. Once it d
 ```
 Figure 1: Packet received by NIC.
 
-As the frame is captured the data is transferred to the kernel (where we live). This can be implemented in many ways. For example, the NIC may have direct access to a shared buffer in main memory. The CPU is notified of the transfer, and runs network drivers. The Layer 2 network drivers will then process the shared buffer into the kernel Ethernet Frame (Figure 2). 
+As the frame is captured, the NIC strips the preamble and Start frame delimiter from the frame and passes the Kernel Ethernet Frame to the L2 network drivers (Figure 2). This can be implemented in many ways. For example, the NIC may have direct access to a shared buffer in main memory. The CPU is notified of the transfer. The Layer 2 network drivers will then read the shared memory buffer, and extract the packet data (Figure 2). 
 
 
 ```    
