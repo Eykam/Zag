@@ -59,7 +59,7 @@ This data transfer from NIC to driver can be implemented through various mechani
 
 
 ```    
-<------------------------------- Kernel Ethernet Frame --------------------------------->
+<------------ Kernel Ethernet Frame --------------->
     
 +---------+------+------+---------+----------------+
 | Dest    | Src  | Type | Data    | Frame Check    |
