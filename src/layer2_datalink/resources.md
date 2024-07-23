@@ -11,6 +11,7 @@
 <br>
 
 ## Receiving
+#### Overview
 The transition from Layer 1 to Layer 2 in Ethernet involves:
 
 1. Signal Reception:
