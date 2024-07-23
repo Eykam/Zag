@@ -77,7 +77,7 @@ Figure 2: Packet received by Kernel Raw Socket, this is what we will be working 
 The general idea is that Layer 2 will parse the protocol type, then pipe the data (and other necessary headers) to the appropriate Layer 3 Protocol-specific driver.
 
 ```
-frame = Eth_Driver(raw_data) 
+frame = Eth_Driver(kernel_eth_frame) // frame from figure 2
 frame.type = IPv4 (Layer 3 protocol) 
 IPv4_driver(frame)
    ^
