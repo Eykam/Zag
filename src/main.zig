@@ -1,26 +1,25 @@
 const std = @import("std");
-const Packet = @import("Packet.zig");
-// const Socket = @import("Socket.zig");
+const L2Sockets = @import("./layer2_datalink/Sockets.zig");
+const L2Packets = @import("./layer2_datalink/Packets.zig");
+const Raw_Socket = L2Sockets.Raw_Socket;
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    var socket = try allocator.create(Raw_Socket);
+    defer allocator.destroy(socket);
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+    const interface = "eth0";
+    try socket.init(interface);
+    try socket.bind();
 
-    try bw.flush(); // don't forget to flush!
+    const max_packet_size = L2Packets.EthPacketSizeRange[1];
+    var buffer: [max_packet_size]u8 = undefined;
+    while (true) {
+        try socket.recvfrom(&buffer);
+    }
 }
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
-}
+test "network stack & pipeline test" {}

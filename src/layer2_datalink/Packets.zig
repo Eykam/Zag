@@ -1,6 +1,9 @@
 const std = @import("std");
+
 const assert = std.debug.assert;
-const EthPacketSizeRange = .{ 64, 1518 };
+const print = std.debug.print;
+
+pub const EthPacketSizeRange = .{ 64, 1518 };
 
 pub const Eth_Packet = struct {
     dest: [6]u8,
@@ -14,47 +17,47 @@ pub const Eth_Packet = struct {
     }
 
     pub fn log(self: *Eth_Packet, data_len: usize) void {
-        std.debug.print("===============================\n", .{});
-        std.debug.print("Received {} bytes\n", .{data_len});
+        print("===============================\n", .{});
+        print("Received {} bytes\n", .{data_len});
 
         // Dest
-        std.debug.print("Dest MAC: ", .{});
+        print("Dest MAC: ", .{});
         inline for (self.dest, 0..) |byte, ind| {
             const last = if (ind < self.dest.len - 1) ":" else "";
-            std.debug.print("{x:0>2}{s}", .{
+            print("{x:0>2}{s}", .{
                 byte,
                 last,
             });
         }
-        std.debug.print("\n", .{});
+        print("\n", .{});
 
         // Source
-        std.debug.print("Source MAC: ", .{});
+        print("Source MAC: ", .{});
         inline for (self.source, 0..) |byte, ind| {
             const last = if (ind < self.source.len - 1) ":" else "";
-            std.debug.print("{x:0>2}{s}", .{
+            print("{x:0>2}{s}", .{
                 byte,
                 last,
             });
         }
-        std.debug.print("\n", .{});
+        print("\n", .{});
 
         // Type
-        std.debug.print("Type: 0x", .{});
+        print("Type: 0x", .{});
         inline for (self.packet_type) |byte| {
-            std.debug.print("{x:0>2}", .{byte});
+            print("{x:0>2}", .{byte});
         }
-        std.debug.print("\n", .{});
+        print("\n\n", .{});
 
-        inline for (0..data_len) |ind| {
+        for (0..data_len) |ind| {
             if (ind != 0 and (ind % 16) == 0) {
-                std.debug.print("\n", .{});
+                print("\n", .{});
             } else if (ind != 0 and (ind % 8) == 0) {
-                std.debug.print("  ", .{});
+                print("  ", .{});
             }
-            std.debug.print("{x:0>2} ", .{self.data[ind]});
+            print("{x:0>2} ", .{self.data[ind]});
         }
-        std.debug.print("\n", .{});
+        print("\n", .{});
     }
     pub fn obfuscate() !void {
         // take bytes in and do random bitshift. No other purpose than to
@@ -86,7 +89,7 @@ pub const Eth_Parser = struct {
         const data_end = raw_data.len - packet.crc.len; // Last 4 bytes are CRC
         const data_len = data_end - data_start;
 
-        // std.debug.print("{} {} {}", .{ data_start, data_end, data_len });
+        // print("{} {} {}", .{ data_start, data_end, data_len });
 
         packet.data = try allocator.alloc(u8, data_len);
 
@@ -99,4 +102,4 @@ pub const Eth_Parser = struct {
     }
 };
 
-test "eth_packet_tests" {}
+test "eth_packet_parsing" {}

@@ -1,5 +1,8 @@
 const std = @import("std");
 const Packets = @import("Packets.zig");
+const Helpers = @import("helpers.zig");
+
+const fs = std.fs;
 const Eth_Parser = Packets.Eth_Parser;
 const Eth_Packet = Packets.Eth_Packet;
 
@@ -9,11 +12,11 @@ const SOCK_TYPE: u32 = @as(u32, std.posix.SOCK.RAW);
 const IF_INDEX: i32 = 2;
 
 // Make sure memory aligned??
-// Might not need to be optimized since not many sockets open at once
-const Raw_Socket = struct {
+// Might not need to optimized since not many sockets open at once. Linux also limits # file descriptors
+pub const Raw_Socket = struct {
     socket: ?std.posix.socket_t,
     address: std.posix.sockaddr.ll,
-    pub fn init(self: *Raw_Socket) !void {
+    pub fn init(self: *Raw_Socket, interface: []const u8) !void {
         // Create a raw socket
         const socket = try std.posix.socket(AF_PACKET, SOCK_TYPE, std.mem.nativeToBig(
             u32,
@@ -25,6 +28,8 @@ const Raw_Socket = struct {
             return;
         }
 
+        const mac_addr = try Helpers.getMacAddress(interface);
+
         // Todo: find way to get these values programmatically / at comptime
         self.address = std.posix.sockaddr.ll{
             .family = AF_PACKET,
@@ -33,11 +38,11 @@ const Raw_Socket = struct {
             .hatype = 1,
             .pkttype = 0,
             .halen = 6,
-            .addr = [8]u8{ 0x00, 0x15, 0x5d, 0xa4, 0x34, 0xb0, 0, 0 },
+            .addr = mac_addr,
         };
 
-        std.debug.print("Raw socket created successfully! {}\n", .{socket});
         self.socket = socket;
+        try self.log();
         return;
     }
 
@@ -78,37 +83,21 @@ const Raw_Socket = struct {
         }
     }
 
+    pub fn log(self: *Raw_Socket) !void {
+        std.debug.print("Raw socket created successfully!\n", .{});
+        std.debug.print("Socket ID:{?}\nInterface: ", .{self.socket});
+        inline for (self.address.addr, 0..) |byte, ind| {
+            const last = if (ind < self.address.addr.len - 1) ":" else "";
+            std.debug.print("{x:0>2}{s}", .{
+                byte,
+                last,
+            });
+        }
+        std.debug.print("\n", .{});
+    }
+
     pub fn sendTo() !void {} // TODO: Implement
     pub fn close() !void {} // TODO: Implement
 };
 
-// need to remove this from here => main.zig.
-// Find way to return self, to make chainable pipe
-// ex: socket.init().bind().recvfrom()...etc;
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    var socket = try allocator.create(Raw_Socket);
-    defer allocator.destroy(socket);
-
-    try socket.init();
-    try socket.bind();
-
-    std.debug.print("Raw socket listening on interface ...\n", .{});
-
-    var buffer: [1522]u8 = undefined;
-    while (true) {
-        try socket.recvfrom(&buffer);
-    }
-}
-
-test "raw_socket_test" {
-    // std.debug.print("Testing raw socket!", .{});
-    // var socket = Raw_Socket{};
-    // defer socket.close(socket);
-    // try socket.init();
-    // try socket.bind();
-    // try socket.recv();
-}
+test "raw_socket_operations" {}
