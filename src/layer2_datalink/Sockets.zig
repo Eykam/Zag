@@ -1,9 +1,10 @@
 const std = @import("std");
 const Packets = @import("Packets.zig");
 
-// cat /etc/protocols => IP protocol
 const Eth_Packet = Packets.Eth_Packet;
+// cat /etc/protocols => IP protocol
 const PACKET_PROTO: u32 = 0x0003;
+// TODO: maybe consider getting LLC too ??
 const AF_PACKET: u32 = @as(u32, std.posix.AF.PACKET);
 const SOCK_TYPE: u32 = @as(u32, std.posix.SOCK.RAW);
 
@@ -93,7 +94,30 @@ const Raw_Socket = struct {
             curr_packet.source[4],
             curr_packet.source[5],
         });
-        std.debug.print("Type: {x:0>2}\n", .{curr_packet.type});
+
+        // std.debug.print("Dest MAC: {x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}\n", .{
+        //     curr_packet.dest[0] >> 4,
+        //     curr_packet.dest[1] >> 4,
+        //     curr_packet.dest[2] >> 4,
+        //     curr_packet.dest[3] >> 4,
+        //     curr_packet.dest[4] >> 4,
+        //     curr_packet.dest[5] >> 4,
+        // });
+        // std.debug.print("Source MAC: {x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}\n", .{
+        //     curr_packet.source[0] >> 4,
+        //     curr_packet.source[1] >> 3,
+        //     curr_packet.source[2] >> 5,
+        //     curr_packet.source[3] >> 7,
+        //     curr_packet.source[4] >> 3,
+        //     curr_packet.source[5] >> 5,
+        // });
+
+        std.debug.print("Type: 0x", .{});
+        for (curr_packet.type) |byte| {
+            std.debug.print("{x:0>2}", .{byte});
+        }
+
+        std.debug.print("\n", .{});
     }
 
     pub fn close() !void {}
