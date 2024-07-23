@@ -6,6 +6,14 @@ Zag will be an implementation of the bare mininum needed to comply with RFC / IE
 
 ### Goals
 The primary goal is to solve skill issues. Also maybe learn about Zig, systems programming, and networking. Would also be cool to make a custom VPN protocol built off of this library. Otherwise, I'd like to make this a good resource for people looking to get into networking. Hopefully if I document it well enough, people can easily follow along in their language of choice.
+
+### Getting Started
+To open Raw Sockets in the Linux kernel (and other OS's), you need `CAP_NET_RAW` capability. This can be done by either running the binary with root priviledges, or assigning the binary specific capabilities. To run the packet packet sniffer:
+```
+sudo zig build run
+```
+I'll likely provide a binary in the future so you don't have to build from source if you just want to try it out.
+
  
 ### OSI Model Overview
 The OSI (Open Systems Interconnection) model is a conceptual framework used to understand and implement network protocols in seven layers. Each layer serves a specific function and communicates with the layers directly above and below it. Below is an overview of the OSI model:
