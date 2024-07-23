@@ -8,7 +8,7 @@ The transition from Layer 1 to Layer 2 in Ethernet involves:
 
 1. Signal Reception:
 
-   - The Network Interface Controller (NIC) receives analog signals from the physical medium.
+   - The Network Interface Controller (NIC) receives analog signals from the physical medium (wifi signals, ethernet cables).
 
 
 2. Signal Decoding:
