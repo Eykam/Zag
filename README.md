@@ -80,30 +80,6 @@ Layer 2 - Data Link Layer
 
 <br>
 
-```    
-<------------------------------- Ethernet Frame --------------------------------->
-    
-+------------+------------+---------+------+------+---------+----------------+
-| Preamble   | Start Frame| Dest    | Src  | Type | Payload | Frame Check    |
-|            | Delimiter  | MAC     | MAC  |      |         | Sequence (FCS) |
-| 7b         | 1B         | 6B      | 6B   | 2B   | 46-1500B| 4B             |
-+------------+------------+---------+------+------+---------+----------------+
-    
-<-------------------------- 64 to 1526 bytes total -------------------------->
-** Need to confirm this **
-
-Preamble: 7 octets of alternating 1s and 0s to synchronize the receiver.
-SFD (Start Frame Delimiter): 1 octet signaling the start of the frame.
-Destination Address: 6 octets identifying the frame's intended recipient.
-Source Address: 6 octets identifying the sender.
-Type/Length: 2 octets indicating the Ethernet type or payload length.
-Payload: Data carried by the frame (46 to 1500 bytes).
-FCS (Frame Check Sequence): 4 octets for error checking.
-Getting Started
-To get started with Zag, clone the repository and explore the documentation provided in each layer's directory. Ensure you have the required development environment set up as specified in the project documentation.
-```
-
-
 
 Contributing
 Contributions are welcome! 
