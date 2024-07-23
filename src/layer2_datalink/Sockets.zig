@@ -1,13 +1,11 @@
 const std = @import("std");
 const Packets = @import("Packets.zig");
-
+const Eth_Parser = Packets.Eth_Parser;
 const Eth_Packet = Packets.Eth_Packet;
-// cat /etc/protocols => IP protocol
-const PACKET_PROTO: u32 = 0x0003;
-// TODO: maybe consider getting LLC too ??
-const AF_PACKET: u32 = @as(u32, std.posix.AF.PACKET);
-const SOCK_TYPE: u32 = @as(u32, std.posix.SOCK.RAW);
 
+const PACKET_PROTO: u32 = 0x0003; // cat /etc/protocols => IP protocol
+const AF_PACKET: u32 = @as(u32, std.posix.AF.PACKET); // TODO: maybe consider getting LLC too ??
+const SOCK_TYPE: u32 = @as(u32, std.posix.SOCK.RAW);
 const IF_INDEX: i32 = 2;
 
 // Make sure memory aligned??
@@ -27,7 +25,7 @@ const Raw_Socket = struct {
             return;
         }
 
-        // find way to get these values programmatically / at comptime
+        // Todo: find way to get these values programmatically / at comptime
         self.address = std.posix.sockaddr.ll{
             .family = AF_PACKET,
             .protocol = std.mem.nativeToBig(u16, PACKET_PROTO),
@@ -53,7 +51,7 @@ const Raw_Socket = struct {
         var addr_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.ll);
         const src_addr_ptr = @as(*std.posix.sockaddr, @ptrCast(&src_addr));
 
-        const bytes_received = try std.posix.recvfrom(
+        _ = try std.posix.recvfrom(
             self.socket.?,
             buffer,
             0,
@@ -61,68 +59,32 @@ const Raw_Socket = struct {
             &addr_len,
         );
 
-        var curr_packet = Eth_Packet{
-            .dest = undefined,
-            .source = undefined,
-            .type = undefined,
-            .data = undefined,
-        };
+        var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+        defer _ = gpa.deinit();
+        const allocator = gpa.allocator();
 
-        try curr_packet.init(buffer, @as(u16, @min(bytes_received, 0xFFFF)));
+        var curr_packet = try Eth_Parser.parse(allocator, buffer);
+        defer curr_packet.deinit(allocator);
 
-        std.debug.print("===============================\n", .{});
-        std.debug.print("Received {} bytes\n", .{bytes_received});
-
-        // Print the first 20 bytes of the packet (adjust as needed)
-        // for (buffer[0..@min(12, bytes_received)]) |byte| {
-        //     std.debug.print("{x:0>2} ", .{byte});
-        // }
-
-        std.debug.print("Dest MAC: {x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}\n", .{
-            curr_packet.dest[0],
-            curr_packet.dest[1],
-            curr_packet.dest[2],
-            curr_packet.dest[3],
-            curr_packet.dest[4],
-            curr_packet.dest[5],
-        });
-        std.debug.print("Source MAC: {x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}\n", .{
-            curr_packet.source[0],
-            curr_packet.source[1],
-            curr_packet.source[2],
-            curr_packet.source[3],
-            curr_packet.source[4],
-            curr_packet.source[5],
-        });
-
-        // std.debug.print("Dest MAC: {x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}\n", .{
-        //     curr_packet.dest[0] >> 4,
-        //     curr_packet.dest[1] >> 4,
-        //     curr_packet.dest[2] >> 4,
-        //     curr_packet.dest[3] >> 4,
-        //     curr_packet.dest[4] >> 4,
-        //     curr_packet.dest[5] >> 4,
-        // });
-        // std.debug.print("Source MAC: {x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}:{x:0>2}\n", .{
-        //     curr_packet.source[0] >> 4,
-        //     curr_packet.source[1] >> 3,
-        //     curr_packet.source[2] >> 5,
-        //     curr_packet.source[3] >> 7,
-        //     curr_packet.source[4] >> 3,
-        //     curr_packet.source[5] >> 5,
-        // });
-
-        std.debug.print("Type: 0x", .{});
-        for (curr_packet.type) |byte| {
-            std.debug.print("{x:0>2}", .{byte});
+        // get list of types from libc. Switch statement over
+        // types w/ L3 packet parser to process each.
+        const packet_typ_u16 = @as(u16, curr_packet.packet_type[0]) << 8 | curr_packet.packet_type[1];
+        switch (packet_typ_u16) {
+            0x0800 => {
+                std.debug.print("==== Found IPV4! ====\n", .{});
+            },
+            else => {},
+            // 0x0,
         }
-
-        std.debug.print("\n", .{});
     }
 
-    pub fn close() !void {}
+    pub fn sendTo() !void {} // TODO: Implement
+    pub fn close() !void {} // TODO: Implement
 };
 
+// need to remove this from here => main.zig.
+// Find way to return self, to make chainable pipe
+// ex: socket.init().bind().recvfrom()...etc;
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
@@ -142,11 +104,11 @@ pub fn main() !void {
     }
 }
 
-// test "UDP_test" {
-//     std.debug.print("Testing UDP!", .{});
-//     var socket = Socket{};
-//     //   defer socket.close(socket);
-//     try socket.init();
-//     // try socket.bind();
-//     try socket.recv();
-// }
+test "raw_socket_test" {
+    // std.debug.print("Testing raw socket!", .{});
+    // var socket = Raw_Socket{};
+    // defer socket.close(socket);
+    // try socket.init();
+    // try socket.bind();
+    // try socket.recv();
+}

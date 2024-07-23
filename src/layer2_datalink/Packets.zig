@@ -5,42 +5,98 @@ const EthPacketSizeRange = .{ 64, 1518 };
 pub const Eth_Packet = struct {
     dest: [6]u8,
     source: [6]u8,
-    type: [2]u8,
-    data: [*]u8,
-    // crc: u4,
+    packet_type: [2]u8,
+    data: []u8,
+    crc: [4]u8,
 
-    pub fn init(self: *Eth_Packet, data: []u8, len: u16) !void {
-        std.debug.print("Packet Length: {}, Min: {}, Max: {}\n", .{ len, EthPacketSizeRange[0], EthPacketSizeRange[1] });
-        assert(EthPacketSizeRange[0] < len and len < EthPacketSizeRange[1]);
-
-        var offset: usize = 0;
-
-        // std.debug.print("Data: {x}\n", .{data.*});
-
-        const dest_len = @sizeOf(@TypeOf(self.dest));
-        @memcpy(self.dest[0..], data[offset..(offset + dest_len)]);
-        offset += dest_len;
-        // std.debug.print("Offset: {}\n", .{offset});
-
-        const source_len = @sizeOf(@TypeOf(self.source));
-        @memcpy(self.source[0..], data[offset..(offset + source_len)]);
-        offset += source_len;
-        // std.debug.print("Offset: {}\n", .{offset});
-
-        const type_len = @sizeOf(@TypeOf(self.type));
-        @memcpy(self.type[0..], data[offset..(offset + type_len)]);
-        offset += type_len;
-        // std.debug.print("Offset: {}\n", .{offset});
-
-        // const data_len = len - offset;
-        // @memcpy(self.data[0..data_len], data.*[offset..(offset + data_len)]);
+    pub fn deinit(self: *Eth_Packet, allocator: std.mem.Allocator) void {
+        allocator.free(self.data);
     }
 
-    pub fn parse(self: *Eth_Packet) !void {
-        _ = self;
+    pub fn log(self: *Eth_Packet, data_len: usize) void {
+        std.debug.print("===============================\n", .{});
+        std.debug.print("Received {} bytes\n", .{data_len});
+
+        // Dest
+        std.debug.print("Dest MAC: ", .{});
+        inline for (self.dest, 0..) |byte, ind| {
+            const last = if (ind < self.dest.len - 1) ":" else "";
+            std.debug.print("{x:0>2}{s}", .{
+                byte,
+                last,
+            });
+        }
+        std.debug.print("\n", .{});
+
+        // Source
+        std.debug.print("Source MAC: ", .{});
+        inline for (self.source, 0..) |byte, ind| {
+            const last = if (ind < self.source.len - 1) ":" else "";
+            std.debug.print("{x:0>2}{s}", .{
+                byte,
+                last,
+            });
+        }
+        std.debug.print("\n", .{});
+
+        // Type
+        std.debug.print("Type: 0x", .{});
+        inline for (self.packet_type) |byte| {
+            std.debug.print("{x:0>2}", .{byte});
+        }
+        std.debug.print("\n", .{});
+
+        inline for (0..data_len) |ind| {
+            if (ind != 0 and (ind % 16) == 0) {
+                std.debug.print("\n", .{});
+            } else if (ind != 0 and (ind % 8) == 0) {
+                std.debug.print("  ", .{});
+            }
+            std.debug.print("{x:0>2} ", .{self.data[ind]});
+        }
+        std.debug.print("\n", .{});
+    }
+    pub fn obfuscate() !void {
+        // take bytes in and do random bitshift. No other purpose than to
+        // hide my IP / MAC address when posting logged output on twitter.
     }
 };
 
-pub const IPV4_Packet = struct {};
-pub const IPV6_Packet = struct {};
-pub const UDP_Packet = struct {};
+// TODO: Figure out what to do in the case that ethernet packet is less than 64 bytes
+//       Double check to make sure that 64 bytes is the correct min length of eth frame
+pub const Eth_Parser = struct {
+    pub fn parse(allocator: std.mem.Allocator, raw_data: []const u8) !Eth_Packet {
+        if (raw_data.len < 6 + 6 + 2 + 4) {
+            return error.PacketTooSmall;
+        }
+
+        var packet = Eth_Packet{
+            .dest = undefined,
+            .source = undefined,
+            .packet_type = undefined,
+            .data = undefined,
+            .crc = undefined,
+        };
+
+        @memcpy(&packet.dest, raw_data[0..6]);
+        @memcpy(&packet.source, raw_data[6..12]);
+        @memcpy(&packet.packet_type, raw_data[12..14]);
+
+        const data_start = packet.dest.len + packet.source.len + packet.packet_type.len;
+        const data_end = raw_data.len - packet.crc.len; // Last 4 bytes are CRC
+        const data_len = data_end - data_start;
+
+        // std.debug.print("{} {} {}", .{ data_start, data_end, data_len });
+
+        packet.data = try allocator.alloc(u8, data_len);
+
+        @memcpy(packet.data, raw_data[data_start..data_end]);
+        @memcpy(&packet.crc, raw_data[data_end..]);
+
+        packet.log(data_len);
+
+        return packet;
+    }
+};
+
+test "eth_packet_tests" {}
