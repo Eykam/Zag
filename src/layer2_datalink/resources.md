@@ -53,7 +53,9 @@ This process occurs rapidly, with the NIC processing millions of bits per second
 ```
 Figure 1: Packet received by NIC.
 
-As the frame is detected / captured from Layer 1, the NIC strips the preamble and Start frame delimiter. It then passes the stripped frame to the L2 network drivers (Figure 2). The data transfer from `NIC => Driver` can be implemented in many ways. For example, the NIC may have direct access to a shared buffer in main memory. The CPU is notified of the transfer. The L2 network drivers will then read the shared memory buffer, and extract the frame data (Figure 2). 
+The transition of Ethernet frame data from Layer 1 to Layer 2 involves several key steps. As the Network Interface Controller (NIC) detects and captures a frame from the physical layer, it immediately strips away the preamble and Start Frame Delimiter (SFD). These elements, crucial for frame synchronization at the physical level, are no longer needed for higher-layer processing. The NIC then prepares to transfer the stripped frame to the Layer 2 network drivers in the kernel.
+
+This data transfer from NIC to driver can be implemented through various mechanisms, with Direct Memory Access (DMA) being the most common in modern systems. In a typical DMA setup, the NIC writes the frame data directly into a pre-allocated buffer in the system's main memory. Once the transfer is complete, the NIC generates an interrupt to notify the CPU. Responding to this interrupt, the Layer 2 network drivers in the kernel can then access and process the frame data from the shared memory buffer. This efficient method minimizes CPU involvement in data transfer, allowing for high-speed network operations with reduced system overhead.
 
 
 ```    
