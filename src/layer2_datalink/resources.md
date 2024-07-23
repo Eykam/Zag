@@ -96,11 +96,15 @@ In this example, the L2 Protocol-specific Driver, Eth_Driver:
 
 In this case, since we determined the frame had a type of IPv4, we call the IPv4 driver and pass it the frame for further propagation up the network stack. 
 
+<br>
+<br>
 
 ## Sending
 
 coming soon...
 
+<br>
+<br>
 
 ## Stucture Fields
 
