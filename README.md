@@ -2,30 +2,49 @@
 Welcome to Zag, a comprehensive project dedicated to implementing the entire OSI model, layer by layer. This project aims to provide a detailed and functional implementation of each layer of the network stack.
 
 ### Introduction
-Zag will be an implementation of the bare mininum needed to comply with RFC / IEEE standards. I'll be implementing the most popular protocols in each layer. 
+Zag will be an implementation of the bare mininum needed to comply with RFC / IEEE standards. I'll be implementing the most popular protocols in each layer. I'm planning on providing documentation, sources, and/or write ups about things I find useful while implementing the stack.
 
 ### Goals
-The primary goal is to solve skill issues. Also maybe learn about Zig, systems programming, and networking. Would also be cool to make a custom VPN protocol built off of this library.
-
+The primary goal is to solve skill issues. Also maybe learn about Zig, systems programming, and networking. Would also be cool to make a custom VPN protocol built off of this library. Otherwise, I'd like to make this a good resource for people looking to get into networking. Hopefully if I document it well enough, people can easily follow along in their language of choice.
+ 
 ### OSI Model Overview
 The OSI (Open Systems Interconnection) model is a conceptual framework used to understand and implement network protocols in seven layers. Each layer serves a specific function and communicates with the layers directly above and below it. Below is an overview of the OSI model:
 
 ```
 +--------------------------------------+
 |             Application              |
+|             Custom VPN               |
 +--------------------------------------+
 |             Presentation             |
+|             TLS / SSL                |
 +--------------------------------------+
 |              Session                 |
+|              Custom                  |
 +--------------------------------------+
 |              Transport               |
+|           TCP and/or UDP             |
 +--------------------------------------+
 |               Network                |
+|            IP (v4 or v6)             |
 +--------------------------------------+
 |               Data Link              |
+|     Ethernet or Wi-Fi (802.xx)       |
 +--------------------------------------+
 |               Physical               |
+|     Ethernet or Wi-Fi (802.xx)       |
 +--------------------------------------+
+
+Explanation of the chosen protocols:
+
+Application: TBD
+Presentation: TDB
+Transport: TCP for reliable communication 
+    (e.g., control messages) and/or UDP for faster data transfer.
+Network: IP (either v4 or v6) for routing packets across networks.
+Data Link: Ethernet for wired connections or Wi-Fi for wireless, 
+    depending on the physical medium.
+Physical: The actual physical medium, which could be Ethernet cables 
+    or Wi-Fi radio waves.
 ```
 
 ### Project Structure
@@ -58,13 +77,12 @@ Layer 2 - Data Link Layer
     
 +------------+------------+---------+------+------+---------+----------------+
 | Preamble   | Start Frame| Dest    | Src  | Type | Payload | Frame Check    |
-| (7 bytes)  | Delimiter  | MAC     | MAC  |      |         | Sequence (FCS) |
-|            | 1B         | 6B      | 6B   | 2B   | 46-1500B| 4B             |
+|            | Delimiter  | MAC     | MAC  |      |         | Sequence (FCS) |
+| 7b         | 1B         | 6B      | 6B   | 2B   | 46-1500B| 4B             |
 +------------+------------+---------+------+------+---------+----------------+
     
-<--------------------- 18 bytes ---------------><- Variable -><---- 4 bytes --->
-<-------------------------- 64 to 1518 bytes total -------------------------->
-
+<-------------------------- 64 to 1526 bytes total -------------------------->
+** Need to confirm this **
 
 Preamble: 7 octets of alternating 1s and 0s to synchronize the receiver.
 SFD (Start Frame Delimiter): 1 octet signaling the start of the frame.
