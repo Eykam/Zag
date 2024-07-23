@@ -7,6 +7,8 @@
 - Sending 
 - Struct
 
+<br>
+<br>
 
 ## Receiving
 The transition from Layer 1 to Layer 2 in Ethernet involves:
