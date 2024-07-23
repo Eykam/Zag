@@ -53,7 +53,7 @@ This process occurs rapidly, with the NIC processing millions of bits per second
 ```
 Figure 1: Packet received by NIC.
 
-As the frame is captured, the NIC strips the preamble and Start frame delimiter from the frame and passes the Kernel Ethernet Frame to the L2 network drivers (Figure 2). This can be implemented in many ways. For example, the NIC may have direct access to a shared buffer in main memory. The CPU is notified of the transfer. The Layer 2 network drivers will then read the shared memory buffer, and extract the packet data (Figure 2). 
+As the frame is detected / captured from Layer 1, the NIC strips the preamble and Start frame delimiter. It then passes the stripped frame to the L2 network drivers (Figure 2). The data transfer from `NIC => Driver` can be implemented in many ways. For example, the NIC may have direct access to a shared buffer in main memory. The CPU is notified of the transfer. The L2 network drivers will then read the shared memory buffer, and extract the frame data (Figure 2). 
 
 
 ```    
