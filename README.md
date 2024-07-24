@@ -106,4 +106,4 @@ Stay Updated
 Follow the project for updates on progress and new releases.
 
 Twitter - https://x.com/AyeCaml <br>
-Website - https://ekamil.sh
+Website - https://www.ekamil.sh
