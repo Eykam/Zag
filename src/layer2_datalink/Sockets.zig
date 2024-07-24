@@ -11,6 +11,7 @@ const AF_PACKET: u32 = @as(u32, std.posix.AF.PACKET);
 const SOCK_TYPE: u32 = @as(u32, std.posix.SOCK.RAW);
 const IF_INDEX: i32 = 2;
 
+// Rename to switch??
 // Make sure memory aligned??
 // Might not need to optimized since not many sockets open at once. Linux also limits # file descriptors
 pub const Raw_Socket = struct {

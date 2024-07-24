@@ -48,7 +48,7 @@ The transition from Layer 1 to Layer 2 in Ethernet involves:
 This process occurs rapidly, with the NIC processing millions of bits per second to accurately frame and process Ethernet data.
 
 ```    
-<------------------------------- NIC Ethernet Frame --------------------------------->
+<--------------------------- NIC Ethernet Frame ----------------------------->
     
 +------------+------------+---------+------+------+---------+----------------+
 | Preamble   | Start Frame| Dest    | Src  | Type | Data    | Frame Check    |
@@ -67,15 +67,15 @@ This data transfer from NIC to driver can be implemented through various mechani
 
 
 ```    
-<------------ Kernel Ethernet Frame --------------->
+<----- Kernel Ethernet Frame ----->
     
-+---------+------+------+---------+----------------+
-| Dest    | Src  | Type | Data    | Frame Check    |
-| MAC     | MAC  |      |         | Sequence (CRC) |
-| 6B      | 6B   | 2B   | 46-1500B| 4B             |
-+---------+------+------+---------+----------------+
++---------+------+------+---------+
+| Dest    | Src  | Type | Data    | 
+| MAC     | MAC  |      |         | 
+| 6B      | 6B   | 2B   | 46-1500B|  
++---------+------+------+---------+
 <------- 14 bytes ------>   
-<------------- 64 to 1518 bytes total ------------->
+<---- 60 to 1514 bytes total ----->
 
 ```
 Figure 2: Packet received by Kernel Raw Socket, this is what we will be working with in our drivers.
@@ -199,9 +199,14 @@ This structure allows Ethernet to provide addressing, protocol identification or
 
 
 ### Sources
+
+NIC:
+- https://github.com/DPDK/dpdk/blob/main/kernel/freebsd/nic_uio/nic_uio.c
+
 Ethernet Frames:
 - https://en.wikipedia.org/wiki/Ethernet_frame
 - https://www.geeksforgeeks.org/ethernet-frame-format/
+- https://reddit.com/r/compsci/comments/aj0jpx/how_do_network_packets_get_to_the_cpu_from_the_nic/
 - https://www.youtube.com/watch?v=JsYqqDqmQaE
 
 Sockets: 
