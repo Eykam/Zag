@@ -75,11 +75,12 @@ pub const Raw_Socket = struct {
         // types w/ L3 packet parser to process each.
         const packet_typ_u16 = @as(u16, curr_packet.packet_type[0]) << 8 | curr_packet.packet_type[1];
         switch (packet_typ_u16) {
+            // IPv4
             0x0800 => {
-                std.debug.print("==== Found IPV4! ====\n", .{});
+                std.debug.print("==== Found IPV4 Packet! ====\n", .{});
             },
+            // IPV6, ARP, etc...
             else => {},
-            // 0x0,
         }
     }
 
