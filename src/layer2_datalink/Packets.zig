@@ -68,8 +68,6 @@ pub const Eth_Packet = struct {
     }
 };
 
-// TODO: Figure out what to do in the case that ethernet packet is less than 64 bytes
-//       Double check to make sure that 64 bytes is the correct min length of eth frame
 pub const Eth_Parser = struct {
     pub fn parse(allocator: std.mem.Allocator, raw_frame: []const u8) !Eth_Packet {
         if (raw_frame.len < Eth_Header_Size) {
@@ -104,6 +102,8 @@ pub const Eth_Parser = struct {
         return packet;
     }
 };
+
+// ==============================================================================================================
 
 const testing = std.testing;
 
