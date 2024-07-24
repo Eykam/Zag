@@ -1,23 +1,23 @@
 const std = @import("std");
-const Packets = @import("Packets.zig");
+const Frame = @import("Frame.zig");
 const Helpers = @import("helpers.zig");
 
 const fs = std.fs;
-const Eth_Parser = Packets.Eth_Parser;
-const Eth_Packet = Packets.Eth_Packet;
+const Eth_Parser = Frame.Eth_Parser;
+const Eth_Frame = Frame.Eth_Frame;
 
 const PACKET_PROTO: u32 = 0x0003; // cat /etc/protocols => IP protocol
 const AF_PACKET: u32 = @as(u32, std.posix.AF.PACKET);
 const SOCK_TYPE: u32 = @as(u32, std.posix.SOCK.RAW);
 const IF_INDEX: i32 = 2;
 
-// Rename to switch??
 // Make sure memory aligned??
 // Might not need to optimized since not many sockets open at once. Linux also limits # file descriptors
-pub const Raw_Socket = struct {
+pub const Switch = struct {
     socket: ?std.posix.socket_t,
     address: std.posix.sockaddr.ll,
-    pub fn init(self: *Raw_Socket, interface: []const u8) !void {
+
+    pub fn init(self: *Switch, interface: []const u8) !void {
         // Create a raw socket
         const socket = try std.posix.socket(AF_PACKET, SOCK_TYPE, std.mem.nativeToBig(
             u32,
@@ -29,6 +29,7 @@ pub const Raw_Socket = struct {
             return;
         }
 
+        std.debug.print("Raw socket created successfully!\n", .{});
         const mac_addr = try Helpers.getMacAddress(interface);
 
         // Todo: find way to get these values programmatically / at comptime
@@ -47,12 +48,12 @@ pub const Raw_Socket = struct {
         return;
     }
 
-    pub fn bind(self: *Raw_Socket) !void {
+    pub fn bind(self: *Switch) !void {
         const addr_ptr = @as(*const std.posix.sockaddr, @ptrCast(&self.address));
         try std.posix.bind(self.socket.?, addr_ptr, @sizeOf(std.posix.sockaddr.ll));
     }
 
-    pub fn recvfrom(self: *Raw_Socket, buffer: []u8) !void {
+    pub fn recvfrom(self: *Switch, buffer: []u8) !void {
         var src_addr: std.posix.sockaddr.ll = undefined;
         var addr_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.ll);
         const src_addr_ptr = @as(*std.posix.sockaddr, @ptrCast(&src_addr));
@@ -85,8 +86,7 @@ pub const Raw_Socket = struct {
         }
     }
 
-    pub fn log(self: *Raw_Socket) !void {
-        std.debug.print("Raw socket created successfully!\n", .{});
+    fn log(self: *Switch) !void {
         std.debug.print("Socket ID:{?}\nInterface: ", .{self.socket});
         inline for (self.address.addr, 0..) |byte, ind| {
             const last = if (ind < self.address.addr.len - 1) ":" else "";
@@ -98,8 +98,26 @@ pub const Raw_Socket = struct {
         std.debug.print("\n", .{});
     }
 
-    pub fn sendTo() !void {} // TODO: Implement
-    pub fn close() !void {} // TODO: Implement
+    pub fn send(self: *Switch, sockfd: std.posix.socket_t, packet: []const u8, data_len: u8) !bool {
+        _ = self;
+
+        const flags: u32 = 0;
+
+        var total_sent: usize = 0;
+        const total_size = Frame.Eth_Header_Size + data_len;
+
+        while (total_sent < total_size) {
+            const bytes_sent = std.posix.send(sockfd, packet[total_sent..], flags) catch |err| {
+                std.debug.print("Error sending frames from L2 Switch!\n {}", .{err});
+                return false;
+            };
+            total_sent += bytes_sent;
+            // std.debug.print("Sent {} bytes, total {}/{}\n", .{ bytes_sent, total_sent, total_size });
+        }
+        return true;
+    }
+
+    fn close() !void {} // TODO: Implement
 };
 
 test "raw_socket_operations" {}
