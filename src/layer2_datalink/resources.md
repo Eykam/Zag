@@ -182,6 +182,11 @@ The preamble is primarily used at the physical layer (Layer 1) of the OSI model.
 - Not typically visible in software-level packet captures, as it's usually stripped off by the network interface hardware after verification
 
 
+## Implementation Details
+
+Coming soon!
+
+<br>
 
 ### Additional notes:
 
@@ -190,3 +195,20 @@ The payload follows the EtherType/Length field and precedes the CRC. Its size ca
 In software packet captures, you'll typically see the frame starting from the Destination MAC address, as the preamble, SFD, and CRC are usually handled by hardware.
 
 This structure allows Ethernet to provide addressing, protocol identification or length specification, and error checking, forming the basis for reliable local area network communication.
+
+
+### Sources
+Ethernet Frames:
+- https://en.wikipedia.org/wiki/Ethernet_frame
+- https://www.geeksforgeeks.org/ethernet-frame-format/
+- https://www.youtube.com/watch?v=JsYqqDqmQaE
+
+Sockets: 
+- Initializing Socket: https://man7.org/linux/man-pages/man2/socket.2.html
+- Binding to Socket: https://man7.org/linux/man-pages/man2/bind.2.html
+- Receiving from Socket: https://man7.org/linux/man-pages/man2/recv.2.html
+
+Packets
+- https://man7.org/linux/man-pages/man7/packet.7.html
+
+
