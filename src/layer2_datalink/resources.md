@@ -125,6 +125,8 @@ The preamble is primarily used at the physical layer (Layer 1) of the OSI model.
 - Position: Immediately follows the 7-byte preamble
 - Not typically visible in kernel-level packet captures
 
+<br>
+** Go over different mac addresses and what they are used for
 
 ### Destination MAC Address:
 

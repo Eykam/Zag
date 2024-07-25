@@ -20,7 +20,7 @@ fn open(socket: Switch) !void {
     }
 }
 
-fn send(allocator: std.mem.Allocator, socket: *Switch, frame: *Frame) !void {
+fn send_frame(allocator: std.mem.Allocator, socket: *Switch, frame: *Frame) !void {
     const buffer_len = L2Packets.Eth_Data_Size_Range[0] + 4;
     const buffer = try allocator.create([buffer_len]u8);
     defer allocator.destroy(buffer);
@@ -45,13 +45,7 @@ fn send(allocator: std.mem.Allocator, socket: *Switch, frame: *Frame) !void {
     _ = try socket.send(socket.socket.?, &full_frame, buffer_len);
 }
 
-// ================================================================================
-
-pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
+pub fn stress_test(allocator: std.mem.Allocator, num_packets: usize) !void {
     const socket = try allocator.create(Switch);
     defer allocator.destroy(socket);
 
@@ -65,14 +59,13 @@ pub fn main() !void {
         .data = undefined,
     };
 
-    const num_packets = 1_000_000;
     std.debug.print("Sending {} Packets...", .{num_packets});
 
     const start_time = std.time.milliTimestamp();
 
     for (0..num_packets) |_| {
         // frame.log();
-        try send(allocator, socket, @constCast(&frame));
+        try send_frame(allocator, socket, @constCast(&frame));
     }
 
     const end_time = std.time.milliTimestamp();
@@ -94,6 +87,17 @@ pub fn main() !void {
         std.fmt.fmtIntSizeDec((64 * num_packets * 1000 / duration)),
     });
     std.debug.print("\n", .{});
+}
+
+// ================================================================================
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    const num_packets = 1_000_000;
+    try stress_test(allocator, num_packets);
 }
 
 test "network stack & pipeline test" {
