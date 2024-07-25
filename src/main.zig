@@ -11,16 +11,16 @@ const INTERFACE = "eth0";
 // For testing / dev
 // Todo: move to appropriate location
 
-fn open(socket: Switch) !void {
-    var buffer: [Frame.Eth_Total_Frame_Size_Range[1]]u8 = undefined;
+fn open(packet_switcher: *Switch) !void {
+    var buffer: [L2Packets.Eth_Total_Frame_Size_Range[1]]u8 = undefined;
 
     while (true) {
-        try socket.recvfrom(&buffer);
+        try packet_switcher.recvfrom(&buffer);
         // try socket2.recvfrom(&buffer2);
     }
 }
 
-fn send_frame(allocator: std.mem.Allocator, socket: *Switch, frame: *Frame) !void {
+fn send_frame(allocator: std.mem.Allocator, packet_switcher: *Switch, frame: *Frame) !void {
     const buffer_len = L2Packets.Eth_Data_Size_Range[0] + 4;
     const buffer = try allocator.create([buffer_len]u8);
     defer allocator.destroy(buffer);
@@ -42,16 +42,10 @@ fn send_frame(allocator: std.mem.Allocator, socket: *Switch, frame: *Frame) !voi
 
     @memcpy(full_frame[offset..], buffer);
 
-    _ = try socket.send(socket.socket.?, &full_frame, buffer_len);
+    _ = try packet_switcher.send(packet_switcher.socket.?, &full_frame, buffer_len);
 }
 
-pub fn stress_test(allocator: std.mem.Allocator, num_packets: usize) !void {
-    const socket = try allocator.create(Switch);
-    defer allocator.destroy(socket);
-
-    try socket.init(INTERFACE);
-    try socket.bind();
-
+pub fn stress_test(allocator: std.mem.Allocator, packet_switcher: Switch, num_packets: usize) !void {
     var frame = L2Packets.Eth_Frame{
         .dest = .{ 0x10, 0x10, 0x10, 0x10, 0x10, 0x10 },
         .source = .{ 0x01, 0x01, 0x01, 0x01, 0x01, 0x01 },
@@ -64,7 +58,7 @@ pub fn stress_test(allocator: std.mem.Allocator, num_packets: usize) !void {
     const start_time = std.time.milliTimestamp();
 
     for (0..num_packets) |_| {
-        try send_frame(allocator, socket, @constCast(&frame));
+        try send_frame(allocator, packet_switcher, @constCast(&frame));
     }
 
     const end_time = std.time.milliTimestamp();
@@ -95,8 +89,16 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    const num_packets = 1_000_000;
-    try stress_test(allocator, num_packets);
+    const packet_switcher = try allocator.create(Switch);
+    defer allocator.destroy(packet_switcher);
+
+    try packet_switcher.init(INTERFACE);
+    try packet_switcher.bind();
+
+    // const num_packets = 1_000_000;
+    // try stress_test(allocator, num_packets);
+
+    try open(packet_switcher);
 }
 
 test "network stack & pipeline test" {

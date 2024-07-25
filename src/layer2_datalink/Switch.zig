@@ -1,9 +1,8 @@
 const std = @import("std");
 const Frame = @import("Frame.zig");
-const Helpers = @import("helpers.zig");
+const Helpers = @import("Helpers.zig");
 
 const fs = std.fs;
-const Eth_Parser = Frame.Eth_Parser;
 const Eth_Frame = Frame.Eth_Frame;
 
 const PACKET_PROTO: u32 = 0x0003; // cat /etc/protocols => IP protocol
@@ -11,8 +10,25 @@ const AF_PACKET: u32 = @as(u32, std.posix.AF.PACKET);
 const SOCK_TYPE: u32 = @as(u32, std.posix.SOCK.RAW);
 const IF_INDEX: i32 = 2;
 
+const Packet_Type = enum(u16) {
+    IPv4 = 0x0800,
+    IPV6 = 0x86dd,
+    ARP = 0x0806,
+    LLDP = 0x88cc,
+    VLAN = 0x8100,
+    MPLS_UNI = 0x8847,
+    MPLS_MULTI = 0x8848,
+    FLOW_CONTROL = 0x8808,
+    PPPoE_DISC = 0x8863,
+    PPPoE_SESS = 0x8864,
+    RARP = 0x8035,
+    IPX = 0x8137,
+    Apple_Talk = 0x809b,
+};
+
 // Make sure memory aligned??
-// Might not need to optimized since not many sockets open at once. Linux also limits # file descriptors
+// Might not need to be optimized since not many sockets open at once.
+// Linux also limits # file descriptors
 pub const Switch = struct {
     socket: ?std.posix.socket_t,
     address: std.posix.sockaddr.ll,
@@ -70,19 +86,28 @@ pub const Switch = struct {
         defer _ = gpa.deinit();
         const allocator = gpa.allocator();
 
-        var curr_packet = try Eth_Parser.parse(allocator, buffer);
-        defer curr_packet.deinit(allocator);
+        var curr_frame = try Eth_Frame.parse(allocator, buffer);
+        defer curr_frame.destroy(allocator);
 
         // get list of types from libc. Switch statement over
         // types w/ L3 packet parser to process each.
-        const packet_typ_u16 = @as(u16, curr_packet.packet_type[0]) << 8 | curr_packet.packet_type[1];
+        const packet_typ_u16 = @as(u16, curr_frame.packet_type[0]) << 8 | curr_frame.packet_type[1];
         switch (packet_typ_u16) {
-            // IPv4
-            0x0800 => {
+            @intFromEnum(Packet_Type.IPv4) => {
                 std.debug.print("==== Found IPV4 Packet! ====\n", .{});
             },
-            // IPV6, ARP, etc...
-            else => {},
+            @intFromEnum(Packet_Type.IPV6) => {
+                std.debug.print("==== Found IPV6 Packet! ====\n", .{});
+            },
+            @intFromEnum(Packet_Type.ARP) => {
+                std.debug.print("==== Found ARP Packet! ====\n", .{});
+            },
+            @intFromEnum(Packet_Type.LLDP) => {
+                std.debug.print("==== Found LLDP Packet! ====\n", .{});
+            },
+            else => {
+                std.debug.print("==== Found UNKNOWN Packet: {x:0>4}! ====\n", .{packet_typ_u16});
+            },
         }
     }
 
@@ -98,7 +123,14 @@ pub const Switch = struct {
         std.debug.print("\n", .{});
     }
 
-    pub fn send(self: *Switch, sockfd: std.posix.socket_t, packet: []const u8, data_len: u8) !bool {
+    // Print stats of dropped packets / avg processing time,
+    // total packets & data sent, etc. when switch is close
+    fn exit_log(self: *Switch) !void {
+        _ = self;
+    }
+
+    // Make take in self, convert to buffer, then send instead of passing frame around as a buffer?
+    pub fn send(self: *Switch, sockfd: std.posix.socket_t, frame: []const u8, data_len: u8) !bool {
         _ = self;
 
         const flags: u32 = 0;
@@ -107,7 +139,7 @@ pub const Switch = struct {
         const total_size = Frame.Eth_Header_Size + data_len;
 
         while (total_sent < total_size) {
-            const bytes_sent = std.posix.send(sockfd, packet[total_sent..], flags) catch |err| {
+            const bytes_sent = std.posix.send(sockfd, frame[total_sent..], flags) catch |err| {
                 std.debug.print("Error sending frames from L2 Switch!\n {}", .{err});
                 return false;
             };
