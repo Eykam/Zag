@@ -14,7 +14,7 @@ Zag will be an implementation of the bare mininum needed to comply with RFC / IE
   - [ ] - Easily follow along in your language of choice.
 
 ### Getting Started
-To open Raw Sockets in the Linux kernel (and other OS's), you need `CAP_NET_RAW` capability. This can be done by either running the binary with root priviledges, or assigning the binary specific capabilities. To run the packet packet sniffer:
+To open Raw Sockets in the Linux kernel (and other OS's), you need `CAP_NET_RAW` capability. This can be done by either running the binary with root priviledges, or assigning the binary specific capabilities. To run the packet parser:
 ```
 sudo zig build run
 ```

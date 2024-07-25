@@ -64,7 +64,6 @@ pub fn stress_test(allocator: std.mem.Allocator, num_packets: usize) !void {
     const start_time = std.time.milliTimestamp();
 
     for (0..num_packets) |_| {
-        // frame.log();
         try send_frame(allocator, socket, @constCast(&frame));
     }
 
