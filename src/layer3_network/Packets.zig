@@ -82,7 +82,7 @@ const IPV6_Packet = packed struct {
     source: [4][2]u16,
     dest: [4][2]u16,
 
-    pub fn init(raw_frame: ?[10]u32) Self {
+    pub fn init(raw_frame: ?[]u8) Self {
         if (raw_frame == null) {
             return Self{
                 .version = VERSION_NUMBER,
@@ -94,6 +94,8 @@ const IPV6_Packet = packed struct {
                 .dest = 0,
             };
         } else {
+            assert(@sizeOf(raw_frame) >= @sizeOf([10]u32));
+
             const version = raw_frame[0][0..4];
             assert(version == VERSION_NUMBER);
 
@@ -112,7 +114,11 @@ const IPV6_Packet = packed struct {
     pub fn log() void {}
 };
 
-const ARP_Packet = packed struct {};
-const DHCP_Packet = packed struct {};
+const ARP_Packet = packed struct {
+    pub fn init() void {}
+};
+const LLDP_Packet = packed struct {
+    pub fn init() void {}
+};
 
 test "IPV4_test" {}

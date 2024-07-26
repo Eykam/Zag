@@ -1,6 +1,7 @@
 const std = @import("std");
 const L2Sockets = @import("./layer2_datalink/Switch.zig");
 const L2Packets = @import("./layer2_datalink/Frame.zig");
+const L3Packets = @import("./layer3_network/Packets.zig");
 const Switch = L2Sockets.Switch;
 const Frame = L2Packets.Eth_Frame;
 
@@ -45,7 +46,7 @@ fn send_frame(allocator: std.mem.Allocator, packet_switcher: *Switch, frame: *Fr
     _ = try packet_switcher.send(packet_switcher.socket.?, &full_frame, buffer_len);
 }
 
-pub fn stress_test(allocator: std.mem.Allocator, packet_switcher: Switch, num_packets: usize) !void {
+pub fn stress_test(allocator: std.mem.Allocator, packet_switcher: *Switch, num_packets: usize) !void {
     var frame = L2Packets.Eth_Frame{
         .dest = .{ 0x10, 0x10, 0x10, 0x10, 0x10, 0x10 },
         .source = .{ 0x01, 0x01, 0x01, 0x01, 0x01, 0x01 },
@@ -95,10 +96,10 @@ pub fn main() !void {
     try packet_switcher.init(INTERFACE);
     try packet_switcher.bind();
 
-    // const num_packets = 1_000_000;
-    // try stress_test(allocator, num_packets);
+    const num_packets = 1_000_000;
+    try stress_test(allocator, packet_switcher, num_packets);
 
-    try open(packet_switcher);
+    // try open(packet_switcher);
 }
 
 test "network stack & pipeline test" {

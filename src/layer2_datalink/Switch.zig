@@ -1,6 +1,7 @@
 const std = @import("std");
 const Frame = @import("Frame.zig");
 const Helpers = @import("Helpers.zig");
+// const Packets = @import("Packets.zig");
 
 const fs = std.fs;
 const Eth_Frame = Frame.Eth_Frame;
@@ -15,15 +16,6 @@ const Packet_Type = enum(u16) {
     IPV6 = 0x86dd,
     ARP = 0x0806,
     LLDP = 0x88cc,
-    VLAN = 0x8100,
-    MPLS_UNI = 0x8847,
-    MPLS_MULTI = 0x8848,
-    FLOW_CONTROL = 0x8808,
-    PPPoE_DISC = 0x8863,
-    PPPoE_SESS = 0x8864,
-    RARP = 0x8035,
-    IPX = 0x8137,
-    Apple_Talk = 0x809b,
 };
 
 // Make sure memory aligned??
@@ -95,15 +87,19 @@ pub const Switch = struct {
         switch (packet_typ_u16) {
             @intFromEnum(Packet_Type.IPv4) => {
                 std.debug.print("==== Found IPV4 Packet! ====\n", .{});
+                // Packets.IPV4_Packet.init(curr_frame);
             },
             @intFromEnum(Packet_Type.IPV6) => {
                 std.debug.print("==== Found IPV6 Packet! ====\n", .{});
+                // Packets.IPv6_Packet.init(curr_frame);
             },
             @intFromEnum(Packet_Type.ARP) => {
                 std.debug.print("==== Found ARP Packet! ====\n", .{});
+                // Packets.ARP_Packet.init(curr_frame);
             },
             @intFromEnum(Packet_Type.LLDP) => {
                 std.debug.print("==== Found LLDP Packet! ====\n", .{});
+                // Packets.LLDP_Packet.init(curr_frame);
             },
             else => {
                 std.debug.print("==== Found UNKNOWN Packet: {x:0>4}! ====\n", .{packet_typ_u16});
