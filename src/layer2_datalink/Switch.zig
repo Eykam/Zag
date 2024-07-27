@@ -1,7 +1,7 @@
 const std = @import("std");
 const Frame = @import("Frame.zig");
 const Helpers = @import("Helpers.zig");
-// const Packets = @import("Packets.zig");
+const Packets = @import("L3").Packets;
 
 const fs = std.fs;
 const Eth_Frame = Frame.Eth_Frame;
@@ -87,19 +87,19 @@ pub const Switch = struct {
         switch (packet_typ_u16) {
             @intFromEnum(Packet_Type.IPv4) => {
                 std.debug.print("==== Found IPV4 Packet! ====\n", .{});
-                // Packets.IPV4_Packet.init(curr_frame);
+                // Packets.IPv4_Packet.unpack(curr_frame);
             },
             @intFromEnum(Packet_Type.IPV6) => {
                 std.debug.print("==== Found IPV6 Packet! ====\n", .{});
-                // Packets.IPv6_Packet.init(curr_frame);
+                // Packets.IPv6_Packet.unpack(curr_frame);
             },
             @intFromEnum(Packet_Type.ARP) => {
                 std.debug.print("==== Found ARP Packet! ====\n", .{});
-                // Packets.ARP_Packet.init(curr_frame);
+                // Packets.ARP_Packet.unpack(curr_frame);
             },
             @intFromEnum(Packet_Type.LLDP) => {
                 std.debug.print("==== Found LLDP Packet! ====\n", .{});
-                // Packets.LLDP_Packet.init(curr_frame);
+                // Packets.LLDP_Packet.unpack(curr_frame);
             },
             else => {
                 std.debug.print("==== Found UNKNOWN Packet: {x:0>4}! ====\n", .{packet_typ_u16});

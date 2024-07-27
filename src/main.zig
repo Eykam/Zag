@@ -1,11 +1,11 @@
 const std = @import("std");
-const L2Sockets = @import("./layer2_datalink/Switch.zig");
-const L2Packets = @import("./layer2_datalink/Frame.zig");
-const L3Packets = @import("./layer3_network/Packets.zig");
-const Switch = L2Sockets.Switch;
-const Frame = L2Packets.Eth_Frame;
+const L2 = @import("L2");
 
-const MAX_FRAME_SIZE = L2Packets.Eth_Total_Frame_Size_Range[1];
+const Switch = L2.Switch_Handler.Switch;
+const Frame_Handler = L2.Frame_Handler;
+const Frame = Frame_Handler.Eth_Frame;
+
+const MAX_FRAME_SIZE = Frame_Handler.Eth_Total_Frame_Size_Range[1];
 const INTERFACE = "eth0";
 
 // ================================================================================
@@ -13,7 +13,7 @@ const INTERFACE = "eth0";
 // Todo: move to appropriate location
 
 fn open(packet_switcher: *Switch) !void {
-    var buffer: [L2Packets.Eth_Total_Frame_Size_Range[1]]u8 = undefined;
+    var buffer: [Frame_Handler.Eth_Total_Frame_Size_Range[1]]u8 = undefined;
 
     while (true) {
         try packet_switcher.recvfrom(&buffer);
@@ -22,13 +22,13 @@ fn open(packet_switcher: *Switch) !void {
 }
 
 fn send_frame(allocator: std.mem.Allocator, packet_switcher: *Switch, frame: *Frame) !void {
-    const buffer_len = L2Packets.Eth_Data_Size_Range[0] + 4;
+    const buffer_len = Frame_Handler.Eth_Data_Size_Range[0] + 4;
     const buffer = try allocator.create([buffer_len]u8);
     defer allocator.destroy(buffer);
 
     buffer.* = .{0x12} ** buffer_len;
 
-    var full_frame = [_]u8{0x00} ** (buffer_len + L2Packets.Eth_Header_Size);
+    var full_frame = [_]u8{0x00} ** (buffer_len + Frame_Handler.Eth_Header_Size);
 
     var offset: usize = 0;
 
@@ -47,7 +47,7 @@ fn send_frame(allocator: std.mem.Allocator, packet_switcher: *Switch, frame: *Fr
 }
 
 pub fn stress_test(allocator: std.mem.Allocator, packet_switcher: *Switch, num_packets: usize) !void {
-    var frame = L2Packets.Eth_Frame{
+    var frame = Frame{
         .dest = .{ 0x10, 0x10, 0x10, 0x10, 0x10, 0x10 },
         .source = .{ 0x01, 0x01, 0x01, 0x01, 0x01, 0x01 },
         .packet_type = .{ 0x08, 0x00 },
@@ -96,10 +96,10 @@ pub fn main() !void {
     try packet_switcher.init(INTERFACE);
     try packet_switcher.bind();
 
-    const num_packets = 1_000_000;
-    try stress_test(allocator, packet_switcher, num_packets);
+    // const num_packets = 1_000_000;
+    // try stress_test(allocator, packet_switcher, num_packets);
 
-    // try open(packet_switcher);
+    try open(packet_switcher);
 }
 
 test "network stack & pipeline test" {

@@ -1,7 +1,8 @@
 const std = @import("std");
+const Frame = @import("L2").Frame_Handler.Eth_Frame;
 const assert = std.debug.assert;
 
-const IPV4_Protocols = enum(u8) {
+pub const IPv4_Protocols = enum(u8) {
     TCP = 0x06,
     UDP = 0x11,
     ICMP = 0x01,
@@ -13,7 +14,7 @@ const IPV4_Protocols = enum(u8) {
     OSPF = 0x59,
 };
 
-const IPV4_Packet = packed struct {
+pub const IPv4_Packet = packed struct {
     const Self = @This();
     const VERSION_NUMBER = 0b0100;
 
@@ -27,49 +28,68 @@ const IPV4_Packet = packed struct {
     ttl: u8,
     protocol: u8,
     checksum: u16,
-    source: [4]u8,
-    dest: [4]u8,
+    source: u32,
+    dest: u32,
 
-    pub fn init(raw_frame: ?[5]u32) Self {
-        if (raw_frame == null) {
-            return Self{
-                .version = VERSION_NUMBER,
-                .header_length = 0,
-                .tos_ds = 0,
-                .packet_length = 0,
-                .identification = 0,
-                .flag = 0,
-                .frag_offset = 0,
-                .ttl = 0,
-                .protocol = 0,
-                .checksum = 0,
-                .source = 0,
-                .dest = 0,
-            };
-        } else {
-            const version = raw_frame[0][0..4];
-            assert(version == VERSION_NUMBER);
-
-            return Self{
-                .version = version,
-                .header_length = raw_frame[0][4..8],
-                .tos_ds = raw_frame[0][8..16],
-                .packet_length = raw_frame[0][16..32],
-                .identification = raw_frame[1][0..16],
-                .flags = raw_frame[1][16..20],
-                .frag_offset = raw_frame[1][20..32],
-                .ttl = raw_frame[2][0..8],
-                .protocol = raw_frame[2][8..16],
-                .checksum = raw_frame[2][16..32],
-                .source = raw_frame[3],
-                .dest = raw_frame[4],
-            };
-        }
+    pub fn init() Self {
+        return Self{
+            .version = VERSION_NUMBER,
+            .header_length = 0,
+            .tos_ds = 0,
+            .packet_length = 0,
+            .identification = 0,
+            .flag = 0,
+            .frag_offset = 0,
+            .ttl = 0,
+            .protocol = 0,
+            .checksum = 0,
+            .source = 0,
+            .dest = 0,
+        };
     }
+
+    pub fn unpack(raw_frame: Frame) Self {
+        const packet_data = raw_frame.data;
+
+        const version: u4 = @as(u4, @intCast((packet_data[0] >> 4) & 0xF));
+        assert(version == VERSION_NUMBER);
+
+        const header_length: u4 = @as(u4, @intCast(packet_data[0] & 0x0F));
+        const tos_ds = packet_data[1];
+
+        const packet_length: u12 = @as(u8, @intCast((packet_data[2]) << 8)) ++ @as(u4, @intCast(packet_data[3] >> 4));
+        const identification: u16 = (@as(u16, packet_data[4]) << 8) | @as(u16, packet_data[5]);
+
+        const flags: u4 = @as(u4, @intCast((packet_data[6] >> 5) & 0x7));
+        const frag_offset: u12 = (@as(u16, packet_data[6] & 0x1F) << 8) | @as(u16, packet_data[7]);
+
+        const ttl = packet_data[8];
+        const protocol = packet_data[9];
+
+        const checksum: u16 = (@as(u16, packet_data[10]) << 8) | @as(u16, packet_data[11]);
+        const source: u32 = (@as(u32, packet_data[12]) << 24) | (@as(u32, packet_data[13]) << 16) | (@as(u32, packet_data[14]) << 8) | @as(u32, packet_data[15]);
+        const dest: u32 = (@as(u32, packet_data[16]) << 24) | (@as(u32, packet_data[17]) << 16) | (@as(u32, packet_data[18]) << 8) | @as(u32, packet_data[19]);
+
+        return Self{
+            .version = version,
+            .header_length = header_length,
+            .tos_ds = tos_ds,
+            .packet_length = packet_length,
+            .identification = identification,
+            .flags = flags,
+            .frag_offset = frag_offset,
+            .ttl = ttl,
+            .protocol = protocol,
+            .checksum = checksum,
+            .source = source,
+            .dest = dest,
+        };
+    }
+
     pub fn log() void {}
 };
 
-const IPV6_Packet = packed struct {
+pub const IPv6_Packet = packed struct {
     const Self = @This();
     const VERSION_NUMBER = 0b0110;
 
@@ -82,43 +102,50 @@ const IPV6_Packet = packed struct {
     source: [4][2]u16,
     dest: [4][2]u16,
 
-    pub fn init(raw_frame: ?[]u8) Self {
-        if (raw_frame == null) {
-            return Self{
-                .version = VERSION_NUMBER,
-                .traffic_class = 0,
-                .flow_label = 0,
-                .payload_length = 0,
-                .next_header = 0,
-                .source = 0,
-                .dest = 0,
-            };
-        } else {
-            assert(@sizeOf(raw_frame) >= @sizeOf([10]u32));
-
-            const version = raw_frame[0][0..4];
-            assert(version == VERSION_NUMBER);
-
-            return Self{
-                .version = raw_frame[0][0..4],
-                .traffic_class = raw_frame[0][4..12],
-                .flow_label = raw_frame[0][12..32],
-                .payload_length = raw_frame[1][0..16],
-                .next_header = raw_frame[1][16..24],
-                .hop_limit = raw_frame[1][24..32],
-                .source = raw_frame[2..6],
-                .dest = raw_frame[6..10],
-            };
-        }
+    pub fn init() Self {
+        return Self{
+            .version = VERSION_NUMBER,
+            .traffic_class = 0,
+            .flow_label = 0,
+            .payload_length = 0,
+            .next_header = 0,
+            .source = 0,
+            .dest = 0,
+        };
     }
+
+    pub fn unpack(raw_frame: Frame) Self {
+        const packet_data = raw_frame.data;
+        const version = packet_data[0][0..4];
+        assert(version == VERSION_NUMBER);
+
+        return Self{
+            .version = packet_data[0][0..4],
+            .traffic_class = packet_data[0][4..12],
+            .flow_label = packet_data[0][12..32],
+            .payload_length = packet_data[1][0..16],
+            .next_header = packet_data[1][16..24],
+            .hop_limit = packet_data[1][24..32],
+            .source = packet_data[2..6],
+            .dest = packet_data[6..10],
+        };
+    }
+
     pub fn log() void {}
 };
 
-const ARP_Packet = packed struct {
+pub const ARP_Packet = packed struct {
     pub fn init() void {}
+    pub fn unpack(raw_frame: Frame) void {
+        _ = raw_frame;
+    }
 };
-const LLDP_Packet = packed struct {
+
+pub const LLDP_Packet = packed struct {
     pub fn init() void {}
+    pub fn unpack(raw_frame: Frame) void {
+        _ = raw_frame;
+    }
 };
 
 test "IPV4_test" {}
