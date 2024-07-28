@@ -96,10 +96,10 @@ pub fn main() !void {
     try packet_switcher.init(INTERFACE);
     try packet_switcher.bind();
 
-    // const num_packets = 1_000_000;
-    // try stress_test(allocator, packet_switcher, num_packets);
+    const num_packets = 1_000_000;
+    try stress_test(allocator, packet_switcher, num_packets);
 
-    try open(packet_switcher);
+    // try open(packet_switcher);
 }
 
 test "network stack & pipeline test" {

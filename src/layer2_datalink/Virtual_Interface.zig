@@ -109,7 +109,7 @@ pub fn main() !void {
 
     try network.addInterface("eth0", .{ 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 }, .{ 192, 168, 1, 1 });
     try network.addInterface("eth1", .{ 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB }, .{ 192, 168, 2, 1 });
-    std.debug.print("Creating Virtual Interfaces:\n", .{});
+    std.debug.print("Creating Virtual Interfaces:\n\n", .{});
 
     std.debug.print("eth0: ", .{});
     inline for (network.interfaces.items[0].mac, 0..) |byte, ind| {
@@ -122,13 +122,17 @@ pub fn main() !void {
         const last = if (ind < network.interfaces.items[1].mac.len - 1) ":" else "";
         std.debug.print("{x:0>2}{s}", .{ byte, last });
     }
-    std.debug.print("\n", .{});
+    std.debug.print("\n\n", .{});
 
     // Simulate sending a packet
-    var packet = [_]u8{ 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0x08, 0x00 };
+    var packet_to_eth1 = [_]u8{ 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0x08, 0x00 };
+    var packet_to_eth0 = [_]u8{ 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99 };
 
-    std.debug.print("Sending Packet from eth0\n", .{});
-    try network.sendPacket(&packet, .{ 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB });
+    std.debug.print("Sending Packet from eth0 => eth1\n", .{});
+    try network.sendPacket(&packet_to_eth1, .{ 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB });
+
+    std.debug.print("Sending Packet from eth1 => eth0\n\n", .{});
+    try network.sendPacket(&packet_to_eth0, .{ 0x00, 0x11, 0x22, 0x33, 0x44, 0x55 });
 
     // Process packets
     try network.processPackets();
@@ -137,7 +141,9 @@ pub fn main() !void {
     if (network.interfaces.items[1].receivePacket()) |received| {
         std.debug.print("Received packet on eth1: {any}\n", .{received.data});
         allocator.free(received.data);
-    } else {
-        std.debug.print("No packet received on eth1\n", .{});
+    }
+    if (network.interfaces.items[0].receivePacket()) |received| {
+        std.debug.print("Received packet on eth0: {any}\n", .{received.data});
+        allocator.free(received.data);
     }
 }
