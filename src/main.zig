@@ -12,15 +12,6 @@ const INTERFACE = "eth0";
 // For testing / dev
 // Todo: move to appropriate location
 
-fn open(packet_switcher: *Switch) !void {
-    var buffer: [Frame_Handler.Eth_Total_Frame_Size_Range[1]]u8 = undefined;
-
-    while (true) {
-        try packet_switcher.recvfrom(&buffer);
-        // try socket2.recvfrom(&buffer2);
-    }
-}
-
 fn send_frame(allocator: std.mem.Allocator, packet_switcher: *Switch, frame: *Frame) !void {
     const buffer_len = Frame_Handler.Eth_Data_Size_Range[0] + 4;
     const buffer = try allocator.create([buffer_len]u8);

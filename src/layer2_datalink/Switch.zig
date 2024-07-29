@@ -1,15 +1,18 @@
 const std = @import("std");
 const Frame = @import("Frame.zig");
 const Helpers = @import("Helpers.zig");
+const MAC_Address_Table = @import("./MAC_Table.zig").MAC_Address_Table;
 const Packets = @import("L3").Packets;
 
 const fs = std.fs;
 const Eth_Frame = Frame.Eth_Frame;
+const Allocator = std.mem.Allocator;
 
 const PACKET_PROTO: u32 = 0x0003; // cat /etc/protocols => IP protocol
+const IF_INDEX: i32 = 2;
+
 const AF_PACKET: u32 = @as(u32, std.posix.AF.PACKET);
 const SOCK_TYPE: u32 = @as(u32, std.posix.SOCK.RAW);
-const IF_INDEX: i32 = 2;
 
 const Packet_Type = enum(u16) {
     IPv4 = 0x0800,
@@ -18,14 +21,15 @@ const Packet_Type = enum(u16) {
     LLDP = 0x88cc,
 };
 
-// Make sure memory aligned??
-// Might not need to be optimized since not many sockets open at once.
-// Linux also limits # file descriptors
-pub const Switch = struct {
-    socket: ?std.posix.socket_t,
-    address: std.posix.sockaddr.ll,
+// Simulating a port on a switch. Each port will have a read / write pipe with an associated MAC_Address
+// for forwarding Eth_Packets
+pub const Port = struct {
+    id: usize,
+    MAC_Address_Table: MAC_Address_Table, //mapping of MAC_Address to pipes
+    socket: ?std.posix.socket_t, //for forwarding to physical network if device not found
+    socket_address: std.posix.sockaddr.ll,
 
-    pub fn init(self: *Switch, interface: []const u8) !void {
+    fn init(self: *Switch, interface: []const u8) !void {
         // Create a raw socket
         const socket = try std.posix.socket(AF_PACKET, SOCK_TYPE, std.mem.nativeToBig(
             u32,
@@ -41,7 +45,7 @@ pub const Switch = struct {
         const mac_addr = try Helpers.getMacAddress(interface);
 
         // Todo: find way to get these values programmatically / at comptime
-        self.address = std.posix.sockaddr.ll{
+        self.socket_address = std.posix.sockaddr.ll{
             .family = AF_PACKET,
             .protocol = std.mem.nativeToBig(u16, PACKET_PROTO),
             .ifindex = IF_INDEX,
@@ -56,12 +60,12 @@ pub const Switch = struct {
         return;
     }
 
-    pub fn bind(self: *Switch) !void {
+    fn bind_to_socket(self: *Switch) !void {
         const addr_ptr = @as(*const std.posix.sockaddr, @ptrCast(&self.address));
         try std.posix.bind(self.socket.?, addr_ptr, @sizeOf(std.posix.sockaddr.ll));
     }
 
-    pub fn recvfrom(self: *Switch, buffer: []u8) !void {
+    fn recvfrom(self: *Switch, buffer: []u8) !void {
         var src_addr: std.posix.sockaddr.ll = undefined;
         var addr_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.ll);
         const src_addr_ptr = @as(*std.posix.sockaddr, @ptrCast(&src_addr));
@@ -83,6 +87,7 @@ pub const Switch = struct {
 
         // get list of types from libc. Switch statement over
         // types w/ L3 packet parser to process each.
+        // Get IP and Port if IP proto, forward to corresponding mapping
         const packet_typ_u16 = @as(u16, curr_frame.packet_type[0]) << 8 | curr_frame.packet_type[1];
         switch (packet_typ_u16) {
             @intFromEnum(Packet_Type.IPv4) => {
@@ -107,10 +112,19 @@ pub const Switch = struct {
         }
     }
 
+    // Find way to open this in another thread?
+    fn open(self: *Switch) !void {
+        var buffer: [Frame.Eth_Total_Frame_Size_Range[1]]u8 = undefined;
+
+        while (true) {
+            try self.recvfrom(&buffer);
+        }
+    }
+
     fn log(self: *Switch) !void {
         std.debug.print("Socket ID:{?}\nInterface: ", .{self.socket});
-        inline for (self.address.addr, 0..) |byte, ind| {
-            const last = if (ind < self.address.addr.len - 1) ":" else "";
+        inline for (self.socket_address.addr, 0..) |byte, ind| {
+            const last = if (ind < self.socket_address.addr.len - 1) ":" else "";
             std.debug.print("{x:0>2}{s}", .{
                 byte,
                 last,
@@ -120,13 +134,12 @@ pub const Switch = struct {
     }
 
     // Print stats of dropped packets / avg processing time,
-    // total packets & data sent, etc. when switch is close
+    // total packets & data sent, etc. when switch is closed
     fn exit_log(self: *Switch) !void {
         _ = self;
     }
 
-    // Make take in self, convert to buffer, then send instead of passing frame around as a buffer?
-    pub fn send(self: *Switch, sockfd: std.posix.socket_t, frame: []const u8, data_len: u8) !bool {
+    fn forward_to_physical_interface(self: *Switch, sockfd: std.posix.socket_t, frame: []const u8, data_len: u8) !bool {
         _ = self;
 
         const flags: u32 = 0;
@@ -140,12 +153,30 @@ pub const Switch = struct {
                 return false;
             };
             total_sent += bytes_sent;
-            // std.debug.print("Sent {} bytes, total {}/{}\n", .{ bytes_sent, total_sent, total_size });
         }
         return true;
     }
 
+    fn forward_to_virtual_interface() void {} // TODO: Implement
+
     fn close() !void {} // TODO: Implement
+
+};
+
+pub const Switch = struct {
+    const Self = @This();
+
+    eth_port_mapping: std.hash_map, // map of associated mac_address with read/write pipe for communication between interface and switch threads
+    allocator: Allocator,
+
+    pub fn init(allocator: Allocator) !void {
+        return Self{
+            .eth_port_mapping = undefined,
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit() !void {}
 };
 
 test "raw_socket_operations" {}
