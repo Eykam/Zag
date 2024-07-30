@@ -1,11 +1,12 @@
 const std = @import("std");
 const Frame_Handler = @import("./Frame.zig");
+const MAC = @import("./MAC.zig");
+const NAT = @import("./NAT.zig");
 
 const Allocator = std.mem.Allocator;
 const Frame = Frame_Handler;
 const Eth_Frame = Frame.Eth_Frame;
 
-const MacAddress = [6]u8;
 // const IpAddress = ?[4]u8;
 
 const EtherType = enum(u16) {
@@ -14,9 +15,12 @@ const EtherType = enum(u16) {
 };
 
 const Interface = struct {
+    const Self = @This();
+
     name: []const u8,
-    mac: MacAddress,
-    file_descriptor_table: std.ArrayList(u8), // table to keep track of open file descriptors and their bindings (IP:Port)
+    mac: MAC.MAC_Address,
+    NAT_Table: NAT.NAT_Table, // table to keep track of open file descriptors and their bindings (IP:Port)
+    gateway: [4]u8,
 
     pub fn init(
         allocator: Allocator,
@@ -24,7 +28,7 @@ const Interface = struct {
     ) !Interface {
         return Interface{
             .name = name,
-            .mac = generate_mac_address(),
+            .mac = Self.generate_mac_address(),
             .allocator = allocator,
         };
     }
@@ -42,7 +46,7 @@ const Interface = struct {
         _ = frame;
     }
 
-    fn generate_mac_address(self: *Interface) !MacAddress {
+    fn generate_mac_address(self: *Interface) !MAC.MAC_Address {
         _ = self;
 
         const rnd = std.Random.DefaultPrng.init(std.time.nanoTimestamp());
@@ -51,3 +55,9 @@ const Interface = struct {
 
     fn log() void {}
 };
+
+test "interface_generate_mac_address" {}
+
+test "interface_send_frame" {}
+
+test "interface_forward_to_binding" {}

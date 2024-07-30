@@ -2,21 +2,22 @@ const std = @import("std");
 const Frame = @import("L2").Frame_Handler.Eth_Frame;
 const assert = std.debug.assert;
 
-pub const IPv4_Protocols = enum(u8) {
-    TCP = 0x06,
-    UDP = 0x11,
-    ICMP = 0x01,
-    IGMP = 0x02,
-    ESP = 0x32,
-    AH = 0x33,
-    IPv6 = 0x29,
-    GRE = 0x2F,
-    OSPF = 0x59,
-};
-
 pub const IPv4_Packet = packed struct {
     const Self = @This();
     const VERSION_NUMBER = 0b0100;
+    const IPv4_Address = u32;
+
+    const Supported_Protocols = enum(u8) {
+        TCP = 0x06,
+        UDP = 0x11,
+        ICMP = 0x01,
+        IGMP = 0x02,
+        ESP = 0x32,
+        AH = 0x33,
+        IPv6 = 0x29,
+        GRE = 0x2F,
+        OSPF = 0x59,
+    };
 
     version: u4,
     header_length: u4,
@@ -28,8 +29,8 @@ pub const IPv4_Packet = packed struct {
     ttl: u8,
     protocol: u8,
     checksum: u16,
-    source: u32,
-    dest: u32,
+    source: IPv4_Address,
+    dest: IPv4_Address,
 
     pub fn init() Self {
         return Self{
@@ -67,8 +68,8 @@ pub const IPv4_Packet = packed struct {
         const protocol = packet_data[9];
 
         const checksum: u16 = (@as(u16, packet_data[10]) << 8) | @as(u16, packet_data[11]);
-        const source: u32 = (@as(u32, packet_data[12]) << 24) | (@as(u32, packet_data[13]) << 16) | (@as(u32, packet_data[14]) << 8) | @as(u32, packet_data[15]);
-        const dest: u32 = (@as(u32, packet_data[16]) << 24) | (@as(u32, packet_data[17]) << 16) | (@as(u32, packet_data[18]) << 8) | @as(u32, packet_data[19]);
+        const source: IPv4_Address = (@as(IPv4_Address, packet_data[12]) << 24) | (@as(IPv4_Address, packet_data[13]) << 16) | (@as(IPv4_Address, packet_data[14]) << 8) | @as(IPv4_Address, packet_data[15]);
+        const dest: IPv4_Address = (@as(IPv4_Address, packet_data[16]) << 24) | (@as(IPv4_Address, packet_data[17]) << 16) | (@as(IPv4_Address, packet_data[18]) << 8) | @as(IPv4_Address, packet_data[19]);
 
         return Self{
             .version = version,
