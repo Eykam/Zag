@@ -1,11 +1,11 @@
 const std = @import("std");
-const Frame = @import("L2").Frame_Handler.Eth_Frame;
+const Frame = @import("../layer2_datalink/Frame.zig").Eth_Frame;
 const assert = std.debug.assert;
 
 pub const IPv4_Packet = packed struct {
     const Self = @This();
     const VERSION_NUMBER = 0b0100;
-    const IPv4_Address = u32;
+    pub const IPv4_Address = u32;
 
     const Supported_Protocols = enum(u8) {
         TCP = 0x06,

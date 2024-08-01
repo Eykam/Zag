@@ -1,9 +1,9 @@
 const std = @import("std");
 
-const Mac_Address = struct {
+pub const MAC_Address = struct {
     const Self = @This();
 
-    address: [6]u8,
+    address: u48,
 
     pub fn hash(self: Self) u64 {
         return std.hash.Wyhash.hash(0, &self.address);
@@ -14,4 +14,4 @@ const Mac_Address = struct {
     }
 };
 
-pub const MAC_Address_Table = struct {};
+pub const MAC_Address_Table = std.AutoHashMap(MAC_Address, std.posix.socket_t);

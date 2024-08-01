@@ -1,40 +1,61 @@
 const std = @import("std");
-const L2 = @import("L2");
-const L3 = @import("L3");
+const L2 = @import("../lib/layer2_datalink/main.zig");
+const L3 = @import("../lib/layer3_network/main.zig");
 
 const Allocator = std.mem.Allocator;
 const Router = L3.Router_Handler.Router;
+const Switch = L2.Switch_Handler.Switch;
+const Bridge = L2.Bridge_Handler.Bridge;
 const Interface = L2.Interface_Handler.Interface;
 const Frame = L2.Frame_Handler.Eth_Frame;
 
-const Network = struct {
+pub const VLAN = struct {
+    const Self = @This();
+
     interfaces: std.ArrayList(Interface),
-    router: Router,
+    switches: std.ArrayList(Switch),
+    routers: std.ArrayList(Router),
     allocator: Allocator,
 
-    pub fn init(allocator: Allocator) Network {
-        return Network{
+    pub fn init(allocator: Allocator) Self {
+        return Self{
             .interfaces = std.ArrayList(Interface).init(allocator),
+            .switches = std.ArrayList(Switch).init(allocator),
+            .routers = std.ArrayList(Router).init(allocator),
             .allocator = allocator,
         };
     }
 
-    pub fn deinit(self: *Network) void {
+    pub fn deinit(self: Self) void {
         for (self.interfaces.items) |*iface| {
-            iface.deinit();
+            iface.deinit(self.allocator);
         }
+
+        for (self.switches.items) |_switch| {
+            _switch.deinit(self.allocator);
+        }
+
+        for (self.routers.items) |router| {
+            router.deinit(self.allocator);
+        }
+
         self.interfaces.deinit();
+        self.switches.deinit();
+        self.routers.deinit();
     }
 
-    // TODO: Implement LLCD or some broadcasting protocol to let others on network know
-    // Also spawn reading of interface in new thread
-    pub fn add_interface(self: *Network) !void {
-        const iface = try Interface.init(self.allocator);
-        try self.interfaces.append(iface);
+    pub fn add_link(self: Self, _switch: Switch, interface: Interface) !void {
+        try _switch.create_link(self.allocator, interface) catch return error.FailedToAddLink;
+        self.interfaces.append(interface);
     }
 
-    pub fn add_router(self: *Network) !void {
-        _ = self;
+    pub fn add_switch(self: Self, trunk_port: []const u8) !void {
+        const _switch = Switch.init(self.allocator, trunk_port);
+        try self.switches.append(_switch);
+    }
+
+    pub fn add_router(self: Self, router: Router) !void {
+        try self.routers.append(router);
     }
 };
 

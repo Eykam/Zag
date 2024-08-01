@@ -1,11 +1,14 @@
 const std = @import("std");
 const Frame = @import("Frame.zig");
-const Helpers = @import("Helpers.zig");
-const MAC_Address_Table = @import("./MAC_Table.zig").MAC_Address_Table;
-const Packets = @import("L3").Packets;
+const Helpers = @import("../utils/Helpers.zig");
+const Interface_Handler = @import("Interface.zig");
+const MAC = @import("./MAC.zig");
+const MAC_Address_Table = MAC.MAC_Address_Table;
+const Packets = @import("../layer3_network/Packets.zig");
 
 const fs = std.fs;
 const Eth_Frame = Frame.Eth_Frame;
+const Interface = Interface_Handler.Interface;
 const Allocator = std.mem.Allocator;
 
 const PACKET_PROTO: u32 = 0x0003; // cat /etc/protocols => IP protocol
@@ -21,51 +24,48 @@ const Packet_Type = enum(u16) {
     LLDP = 0x88cc,
 };
 
-// Simulating a port on a switch. Each port will have a read / write pipe with an associated MAC_Address
-// for forwarding Eth_Packets
-pub const Port = struct {
-    id: usize,
-    MAC_Address_Table: MAC_Address_Table, //mapping of MAC_Address to pipes
-    socket: ?std.posix.socket_t, //for forwarding to physical network if device not found
-    socket_address: std.posix.sockaddr.ll,
+// Simulating a Link on a switch.
+// Each Link will represent packet transfer using read / write pipe between an interface and a switch
+pub const Link = struct {
+    const Self = @This();
+    const QueueSize = 1024;
 
-    fn init(self: *Switch, interface: []const u8) !void {
-        // Create a raw socket
-        const socket = try std.posix.socket(AF_PACKET, SOCK_TYPE, std.mem.nativeToBig(
-            u32,
-            PACKET_PROTO,
-        ));
+    allocator: Allocator,
+    to_switch: []u8, // placeholder for now, until event loop is implemented
+    to_interface: []u8, // placeholder for now, until event loop is implemented
+    packetQueue: std.RingBuffer,
 
-        if (socket < 0) {
-            std.debug.print("Error creating socket\n", .{});
-            return;
-        }
-
-        std.debug.print("Raw socket created successfully!\n", .{});
-        const mac_addr = try Helpers.getMacAddress(interface);
-
-        // Todo: find way to get these values programmatically / at comptime
-        self.socket_address = std.posix.sockaddr.ll{
-            .family = AF_PACKET,
-            .protocol = std.mem.nativeToBig(u16, PACKET_PROTO),
-            .ifindex = IF_INDEX,
-            .hatype = 1,
-            .pkttype = 0,
-            .halen = 6,
-            .addr = mac_addr,
+    pub fn init(allocator: Allocator) !*Self {
+        const self = try allocator.create(Self);
+        self.* = .{
+            .allocator = allocator,
+            .to_switch = .{},
+            .to_interface = .{},
         };
-
-        self.socket = socket;
-        try self.log();
-        return;
+        return self;
     }
 
-    fn bind_to_socket(self: *Switch) !void {
-        const addr_ptr = @as(*const std.posix.sockaddr, @ptrCast(&self.address));
-        try std.posix.bind(self.socket.?, addr_ptr, @sizeOf(std.posix.sockaddr.ll));
+    pub fn deinit(self: *Self) void {
+        while (self.to_switch.get()) |node| {
+            self.allocator.free(node.data.data);
+            self.allocator.destroy(node);
+        }
+        while (self.to_interface.get()) |node| {
+            self.allocator.free(node.data.data);
+            self.allocator.destroy(node);
+        }
+        self.allocator.destroy(self);
     }
 
-    fn recvfrom(self: *Switch, buffer: []u8) !void {
+    pub fn hash(self: Self) u64 {
+        return std.hash.Wyhash.hash(0, &self.interface_0 + &self.interface_1);
+    }
+
+    pub fn eql(self: Self, other: Self) bool {
+        return std.mem.eql(u8, &self.address, &other.address);
+    }
+
+    fn recvfrom(self: *Self, buffer: []u8) !void {
         var src_addr: std.posix.sockaddr.ll = undefined;
         var addr_len: std.posix.socklen_t = @sizeOf(std.posix.sockaddr.ll);
         const src_addr_ptr = @as(*std.posix.sockaddr, @ptrCast(&src_addr));
@@ -113,7 +113,7 @@ pub const Port = struct {
     }
 
     // Find way to open this in another thread?
-    fn open(self: *Switch) !void {
+    fn open(self: *Self) !void {
         var buffer: [Frame.Eth_Total_Frame_Size_Range[1]]u8 = undefined;
 
         while (true) {
@@ -121,7 +121,7 @@ pub const Port = struct {
         }
     }
 
-    fn log(self: *Switch) !void {
+    fn log(self: *Self) !void {
         std.debug.print("Socket ID:{?}\nInterface: ", .{self.socket});
         inline for (self.socket_address.addr, 0..) |byte, ind| {
             const last = if (ind < self.socket_address.addr.len - 1) ":" else "";
@@ -135,11 +135,11 @@ pub const Port = struct {
 
     // Print stats of dropped packets / avg processing time,
     // total packets & data sent, etc. when switch is closed
-    fn exit_log(self: *Switch) !void {
+    fn exit_log(self: *Self) !void {
         _ = self;
     }
 
-    fn forward_to_physical_interface(self: *Switch, sockfd: std.posix.socket_t, frame: []const u8, data_len: u8) !bool {
+    fn forward_to_physical_interface(self: *Self, sockfd: std.posix.socket_t, frame: []const u8, data_len: u8) !bool {
         _ = self;
 
         const flags: u32 = 0;
@@ -163,20 +163,6 @@ pub const Port = struct {
 
 };
 
-pub const Switch = struct {
-    const Self = @This();
+const testing = std.testing;
 
-    eth_port_mapping: std.hash_map, // map of associated mac_address with read/write pipe for communication between interface and switch threads
-    allocator: Allocator,
-
-    pub fn init(allocator: Allocator) !void {
-        return Self{
-            .eth_port_mapping = undefined,
-            .allocator = allocator,
-        };
-    }
-
-    pub fn deinit() !void {}
-};
-
-test "raw_socket_operations" {}
+test "read_write" {}
