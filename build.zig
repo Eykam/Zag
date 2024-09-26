@@ -42,26 +42,26 @@ pub fn build(b: *std.Build) void {
     //     .root_source_file = b.path("src/layer1_physical/main.zig"),
     //     .target = target,
     // });
-    const L3 = b.addModule("L3", .{
-        .root_source_file = b.path("src/layer3_network/main.zig"),
-        .target = target,
-    });
+    // const L3 = b.addModule("L3", .{
+    //     .root_source_file = b.path("src/layer3_network/main.zig"),
+    //     .target = target,
+    // });
 
-    // Define L2 and add L3 as a dependency
-    const L2 = b.addModule("L2", .{
-        .root_source_file = b.path("src/layer2_datalink/main.zig"),
-        .target = target,
-        .imports = &.{
-            .{ .name = "L3", .module = L3 },
-        },
-    });
+    // // Define L2 and add L3 as a dependency
+    // const L2 = b.addModule("L2", .{
+    //     .root_source_file = b.path("src/layer2_datalink/main.zig"),
+    //     .target = target,
+    //     .imports = &.{
+    //         .{ .name = "L3", .module = L3 },
+    //     },
+    // });
 
-    L3.addImport("L2", L2);
+    // L3.addImport("L2", L2);
 
-    // exe.root_module.addImport("L1", L1);
+    // // exe.root_module.addImport("L1", L1);
 
-    exe.root_module.addImport("L2", L2);
-    exe.root_module.addImport("L3", L3);
+    // exe.root_module.addImport("L2", L2);
+    // exe.root_module.addImport("L3", L3);
 
     // This declares intent for the executable to be installed into the
     // standard location when the user invokes the "install" step (the default
